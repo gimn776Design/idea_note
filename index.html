@@ -1,44 +1,39 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head> <link rel="manifest" href="manifest.json">
+<head>
 <meta charset="UTF-8">
 <title>Idea Note</title>
+<link rel="manifest" href="manifest.json">
 <style>
   body {
     font-family: Arial, sans-serif;
     background: #f5f7fa;
-    padding: 40px;
+    padding: 20px;
   }
   .container {
     max-width: 700px;
     margin: auto;
     background: #fff;
-    padding: 24px;
+    padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
   textarea {
     width: 100%;
     height: 160px;
-    padding: 12px;
-    font-size: 14px;
+    padding: 10px;
   }
   button {
     margin-top: 10px;
-    padding: 10px 16px;
-    background: #4a6cf7;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
+    padding: 8px 14px;
+    margin-right: 5px;
   }
   .item {
     padding: 12px;
     border-bottom: 1px solid #ddd;
-    cursor: pointer;
   }
-  .item:hover {
-    background: #f1f3f8;
+  .item-title {
+    font-weight: bold;
+    cursor: pointer;
   }
   .date {
     font-size: 12px;
@@ -53,65 +48,62 @@
 <body>
 <div class="container">
 
-  <!-- 홈 / 목록 -->
+  <!-- 목록 -->
   <div id="home">
     <h2>📚 아이디어 목록</h2>
     <button onclick="goWrite()">✍️ 새 글 작성</button>
     <div id="list"></div>
   </div>
 
-  <!-- 작성 -->
+  <!-- 작성 / 수정 -->
   <div id="write" class="hidden">
-    <h2>✍️ 아이디어 작성</h2>
-    <textarea id="content" placeholder="아이디어를 자유롭게 적어보세요"></textarea>
-    <br>
+    <h2 id="writeTitle">✍️ 글 작성</h2>
+    <textarea id="content"></textarea><br>
     <button onclick="save()">저장</button>
     <button onclick="goHome()">취소</button>
-  </div>
-
-  <!-- 상세 -->
-  <div id="detail" class="hidden">
-    <h2 id="detailTitle"></h2>
-    <div class="date" id="detailDate"></div>
-    <hr>
-    <div id="detailContent"></div>
-    <br>
-    <button onclick="goHome()">← 목록으로</button>
   </div>
 
 </div>
 
 <script>
 let notes = JSON.parse(localStorage.getItem("notes")) || [];
-let currentIndex = null;
+let editIndex = null;
+
+function hideAll() {
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("write").classList.add("hidden");
+}
 
 function goHome() {
-  hideAll();   <!--deploy__>
+  hideAll();
   renderList();
   document.getElementById("home").classList.remove("hidden");
 }
 
 function goWrite() {
-  hideAll();
+  editIndex = null;
   document.getElementById("content").value = "";
+  document.getElementById("writeTitle").innerText = "✍️ 글 작성";
+  hideAll();
   document.getElementById("write").classList.remove("hidden");
-}
-
-function hideAll() {
-  document.getElementById("home").classList.add("hidden");
-  document.getElementById("write").classList.add("hidden");
-  document.getElementById("detail").classList.add("hidden");
 }
 
 function save() {
   const text = document.getElementById("content").value.trim();
   if (!text) return;
 
-  notes.push({
-    title: text.slice(0, 20) + (text.length > 20 ? "..." : ""),
-    content: text,
-    date: new Date().toLocaleString()
-  });
+  if (editIndex === null) {
+    notes.push({
+      title: text.slice(0, 20) + (text.length > 20 ? "..." : ""),
+      content: text,
+      date: new Date().toLocaleString()
+    });
+  } else {
+    notes[editIndex].content = text;
+    notes[editIndex].title =
+      text.slice(0, 20) + (text.length > 20 ? "..." : "");
+    notes[editIndex].date = new Date().toLocaleString();
+  }
 
   localStorage.setItem("notes", JSON.stringify(notes));
   goHome();
@@ -120,39 +112,42 @@ function save() {
 function renderList() {
   const list = document.getElementById("list");
   list.innerHTML = "";
+
   notes.forEach((note, index) => {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <strong>${note.title}</strong>
+      <div class="item-title" onclick="editNote(${index})">
+        ${note.title}
+      </div>
       <div class="date">${note.date}</div>
+      <button onclick="deleteNote(${index})">삭제</button>
     `;
-    div.onclick = () => openDetail(index);
     list.prepend(div);
   });
 }
 
-function openDetail(index) {
-  currentIndex = index;
-  const note = notes[index];
+function editNote(index) {
+  editIndex = index;
+  document.getElementById("content").value = notes[index].content;
+  document.getElementById("writeTitle").innerText = "✏️ 글 수정";
   hideAll();
-  document.getElementById("detailTitle").innerText = note.title;
-  document.getElementById("detailDate").innerText = note.date;
-  document.getElementById("detailContent").innerText = note.content;
-  document.getElementById("detail").classList.remove("hidden");
+  document.getElementById("write").classList.remove("hidden");
+}
+
+function deleteNote(index) {
+  if (!confirm("정말 삭제할까요?")) return;
+  notes.splice(index, 1);
+  localStorage.setItem("notes", JSON.stringify(notes));
+  renderList();
 }
 
 goHome();
-</script>
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker
-      .register("service-worker.js")
-      .then(() => console.log("Service Worker 등록 완료"))
-      .catch(err => console.error("SW 등록 실패", err));
-  }
-</script>
 
+// PWA 서비스워커 등록
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js");
+}
+</script>
 </body>
 </html>
-
