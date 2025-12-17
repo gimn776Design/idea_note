@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head> <link rel="manifest" href="manifest.json">
+<meta charset="UTF-8">
+<title>Idea Note</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    padding: 40px;
+  }
+  .container {
+    max-width: 700px;
+    margin: auto;
+    background: #fff;
+    padding: 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  textarea {
+    width: 100%;
+    height: 160px;
+    padding: 12px;
+    font-size: 14px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: #4a6cf7;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .item {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+  }
+  .item:hover {
+    background: #f1f3f8;
+  }
+  .date {
+    font-size: 12px;
+    color: #666;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- 홈 / 목록 -->
+  <div id="home">
+    <h2>📚 아이디어 목록</h2>
+    <button onclick="goWrite()">✍️ 새 글 작성</button>
+    <div id="list"></div>
+  </div>
+
+  <!-- 작성 -->
+  <div id="write" class="hidden">
+    <h2>✍️ 아이디어 작성</h2>
+    <textarea id="content" placeholder="아이디어를 자유롭게 적어보세요"></textarea>
+    <br>
+    <button onclick="save()">저장</button>
+    <button onclick="goHome()">취소</button>
+  </div>
+
+  <!-- 상세 -->
+  <div id="detail" class="hidden">
+    <h2 id="detailTitle"></h2>
+    <div class="date" id="detailDate"></div>
+    <hr>
+    <div id="detailContent"></div>
+    <br>
+    <button onclick="goHome()">← 목록으로</button>
+  </div>
+
+</div>
+
+<script>
+let notes = JSON.parse(localStorage.getItem("notes")) || [];
+let currentIndex = null;
+
+function goHome() {
+  hideAll();
+  renderList();
+  document.getElementById("home").classList.remove("hidden");
+}
+
+function goWrite() {
+  hideAll();
+  document.getElementById("content").value = "";
+  document.getElementById("write").classList.remove("hidden");
+}
+
+function hideAll() {
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("write").classList.add("hidden");
+  document.getElementById("detail").classList.add("hidden");
+}
+
+function save() {
+  const text = document.getElementById("content").value.trim();
+  if (!text) return;
+
+  notes.push({
+    title: text.slice(0, 20) + (text.length > 20 ? "..." : ""),
+    content: text,
+    date: new Date().toLocaleString()
+  });
+
+  localStorage.setItem("notes", JSON.stringify(notes));
+  goHome();
+}
+
+function renderList() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  notes.forEach((note, index) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <strong>${note.title}</strong>
+      <div class="date">${note.date}</div>
+    `;
+    div.onclick = () => openDetail(index);
+    list.prepend(div);
+  });
+}
+
+function openDetail(index) {
+  currentIndex = index;
+  const note = notes[index];
+  hideAll();
+  document.getElementById("detailTitle").innerText = note.title;
+  document.getElementById("detailDate").innerText = note.date;
+  document.getElementById("detailContent").innerText = note.content;
+  document.getElementById("detail").classList.remove("hidden");
+}
+
+goHome();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("service-worker.js")
+      .then(() => console.log("Service Worker 등록 완료"))
+      .catch(err => console.error("SW 등록 실패", err));
+  }
+</script>
+
+</body>
+</html>
