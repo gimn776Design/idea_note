@@ -86,7 +86,7 @@ let notes = JSON.parse(localStorage.getItem("notes")) || [];
 let currentIndex = null;
 
 function goHome() {
-  hideAll();
+  hideAll();   <!--deploy__>
   renderList();
   document.getElementById("home").classList.remove("hidden");
 }
@@ -155,3 +155,4 @@ goHome();
 
 </body>
 </html>
+
