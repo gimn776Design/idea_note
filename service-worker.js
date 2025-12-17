@@ -1,4 +1,4 @@
-const CACHE_NAME = "idea-note-v1";
+const CACHE_NAME = "idea-note-v2";
 const urlsToCache = [
   "./",
   "./index.html",
@@ -20,3 +20,4 @@ self.addEventListener("fetch", function (event) {
     })
   );
 });
+
