@@ -70,6 +70,55 @@
 </div>
 
 <script>
+
+// 📤 내보내기
+function exportNotes() {
+  const data = JSON.stringify(notes, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "idea-note-backup.json";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+// 📥 불러오기
+function importNotes() {
+  document.getElementById("fileInput").click();
+}
+
+document.getElementById("fileInput").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+
+      if (!Array.isArray(imported)) {
+        alert("올바른 파일이 아닙니다.");
+        return;
+      }
+
+      if (!confirm("기존 메모를 덮어쓸까요?")) return;
+
+      notes = imported;
+      localStorage.setItem("notes", JSON.stringify(notes));
+      renderList();
+      alert("불러오기 완료!");
+    } catch {
+      alert("파일을 읽을 수 없습니다.");
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+  
 let notes = JSON.parse(localStorage.getItem("notes")) || [];
 let editIndex = null;
 
@@ -155,4 +204,5 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+
 
