@@ -52,6 +52,10 @@
   <div id="home">
     <h2>📚 아이디어 목록</h2>
     <button onclick="goWrite()">✍️ 새 글 작성</button>
+    <button onclick="exportNotes()">📤 내보내기</button>
+<button onclick="importNotes()">📥 불러오기</button>
+<input type="file" id="fileInput" accept=".json" hidden>
+
     <div id="list"></div>
   </div>
 
@@ -151,3 +155,4 @@ if ("serviceWorker" in navigator) {
 </script>
 </body>
 </html>
+
