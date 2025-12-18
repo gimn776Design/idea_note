@@ -1,109 +1,204 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>Idea Note</title>
-<link rel="manifest" href="manifest.json">
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f5f7fa;
-    padding: 20px;
-  }
-  .container {
-    max-width: 700px;
-    margin: auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-  }
-  textarea {
-    width: 100%;
-    height: 160px;
-    padding: 10px;
-  }
-  button {
-    margin-top: 10px;
-    padding: 8px 14px;
-    margin-right: 5px;
-  }
-  .item {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-  }
-  .item-title {
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .date {
-    font-size: 12px;
-    color: #666;
-  }
-  .hidden {
-    display: none;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Idea Note</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      padding: 40px;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 160px;
+      padding: 12px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 10px;
+      margin-right: 5px;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    .date {
+      font-size: 12px;
+      color: #666;
+    }
+    .hidden {
+      display: none;
+    }
+    .note-item {
+      margin-bottom: 10px;
+    }
+  </style>
 </head>
 
 <body>
 <div class="container">
 
-  <!-- 목록 -->
+  <!-- 목록 화면 -->
   <div id="home">
     <h2>📚 아이디어 목록</h2>
-    <button onclick="goWrite()">✍️ 새 글 작성</button>
+    <button onclick="goWrite()">✍ 새 글 작성</button>
     <button onclick="exportNotes()">📤 내보내기</button>
-<button onclick="importNotes()">📥 불러오기</button>
-<input type="file" id="fileInput" accept=".json" hidden>
-
+    <button onclick="importNotes()">📥 불러오기</button>
+    <input type="file" id="fileInput" accept=".json" hidden>
+    <hr>
     <div id="list"></div>
   </div>
 
-  <!-- 작성 / 수정 -->
+  <!-- 작성 / 수정 화면 -->
   <div id="write" class="hidden">
-    <h2 id="writeTitle">✍️ 글 작성</h2>
+    <h2 id="writeTitle">✍ 글 작성</h2>
     <textarea id="content"></textarea><br>
-    <button onclick="save()">저장</button>
-    <button onclick="goHome()">취소</button>
+    <button onclick="saveNote()">💾 저장</button>
+    <button onclick="cancelWrite()">↩ 취소</button>
+    <button onclick="deleteCurrent()">🗑 삭제</button>
   </div>
 
 </div>
 
 <script>
+/* ===== 상태 ===== */
+let notes = JSON.parse(localStorage.getItem("notes")) || [];
+let editingId = null;
 
-// 📤 내보내기
+/* ===== 화면 전환 ===== */
+function showHome() {
+  document.getElementById("home").classList.remove("hidden");
+  document.getElementById("write").classList.add("hidden");
+  renderList();
+}
+
+function showWrite() {
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("write").classList.remove("hidden");
+}
+
+function cancelWrite() {
+  showHome();
+}
+
+/* ===== 목록 ===== */
+function renderList() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (notes.length === 0) {
+    list.innerHTML = "<p>작성된 글이 없습니다.</p>";
+    return;
+  }
+
+  notes.forEach((note, index) => {
+    const div = document.createElement("div");
+    div.className = "note-item";
+    div.innerHTML = `
+      <strong>${index + 1}. ${note.content.slice(0, 20)}...</strong>
+      <div class="date">${note.date}</div>
+      <button onclick="editNote(${note.id})">✏️ 수정</button>
+      <button onclick="deleteNote(${note.id})">🗑 삭제</button>
+      <hr>
+    `;
+    list.appendChild(div);
+  });
+}
+
+/* ===== 작성 / 수정 ===== */
+function goWrite() {
+  editingId = null;
+  document.getElementById("content").value = "";
+  document.getElementById("writeTitle").innerText = "✍ 글 작성";
+  showWrite();
+}
+
+function editNote(id) {
+  const note = notes.find(n => n.id === id);
+  if (!note) return;
+
+  editingId = id;
+  document.getElementById("content").value = note.content;
+  document.getElementById("writeTitle").innerText = "✏️ 글 수정";
+  showWrite();
+}
+
+function saveNote() {
+  const content = document.getElementById("content").value.trim();
+  if (!content) {
+    alert("내용을 입력하세요.");
+    return;
+  }
+
+  if (editingId === null) {
+    notes.unshift({
+      id: Date.now(),
+      content,
+      date: new Date().toLocaleString()
+    });
+  } else {
+    const note = notes.find(n => n.id === editingId);
+    if (note) {
+      note.content = content;
+      note.date = new Date().toLocaleString();
+    }
+  }
+
+  localStorage.setItem("notes", JSON.stringify(notes));
+  showHome();
+}
+
+/* ===== 삭제 ===== */
+function deleteNote(id) {
+  if (!confirm("정말 삭제할까요?")) return;
+  notes = notes.filter(n => n.id !== id);
+  localStorage.setItem("notes", JSON.stringify(notes));
+  showHome();
+}
+
+function deleteCurrent() {
+  if (editingId === null) {
+    alert("삭제할 글이 없습니다.");
+    return;
+  }
+  deleteNote(editingId);
+}
+
+/* ===== 내보내기 / 불러오기 ===== */
 function exportNotes() {
   const data = JSON.stringify(notes, null, 2);
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = url;
   a.download = "idea-note-backup.json";
   a.click();
-
   URL.revokeObjectURL(url);
 }
 
-// 📥 불러오기
 function importNotes() {
   document.getElementById("fileInput").click();
 }
 
-document.getElementById("fileInput").addEventListener("change", event => {
-  const file = event.target.files[0];
+document.getElementById("fileInput").addEventListener("change", e => {
+  const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = ev => {
     try {
-      const imported = JSON.parse(e.target.result);
-
-      if (!Array.isArray(imported)) {
-        alert("올바른 파일이 아닙니다.");
-        return;
-      }
-
+      const imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error();
       if (!confirm("기존 메모를 덮어쓸까요?")) return;
 
       notes = imported;
@@ -111,98 +206,15 @@ document.getElementById("fileInput").addEventListener("change", event => {
       renderList();
       alert("불러오기 완료!");
     } catch {
-      alert("파일을 읽을 수 없습니다.");
+      alert("올바른 파일이 아닙니다.");
     }
   };
-
   reader.readAsText(file);
 });
 
-  
-let notes = JSON.parse(localStorage.getItem("notes")) || [];
-let editIndex = null;
-
-function hideAll() {
-  document.getElementById("home").classList.add("hidden");
-  document.getElementById("write").classList.add("hidden");
-}
-
-function goHome() {
-  hideAll();
-  renderList();
-  document.getElementById("home").classList.remove("hidden");
-}
-
-function goWrite() {
-  editIndex = null;
-  document.getElementById("content").value = "";
-  document.getElementById("writeTitle").innerText = "✍️ 글 작성";
-  hideAll();
-  document.getElementById("write").classList.remove("hidden");
-}
-
-function save() {
-  const text = document.getElementById("content").value.trim();
-  if (!text) return;
-
-  if (editIndex === null) {
-    notes.push({
-      title: text.slice(0, 20) + (text.length > 20 ? "..." : ""),
-      content: text,
-      date: new Date().toLocaleString()
-    });
-  } else {
-    notes[editIndex].content = text;
-    notes[editIndex].title =
-      text.slice(0, 20) + (text.length > 20 ? "..." : "");
-    notes[editIndex].date = new Date().toLocaleString();
-  }
-
-  localStorage.setItem("notes", JSON.stringify(notes));
-  goHome();
-}
-
-function renderList() {
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  notes.forEach((note, index) => {
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <div class="item-title" onclick="editNote(${index})">
-        ${note.title}
-      </div>
-      <div class="date">${note.date}</div>
-      <button onclick="deleteNote(${index})">삭제</button>
-    `;
-    list.prepend(div);
-  });
-}
-
-function editNote(index) {
-  editIndex = index;
-  document.getElementById("content").value = notes[index].content;
-  document.getElementById("writeTitle").innerText = "✏️ 글 수정";
-  hideAll();
-  document.getElementById("write").classList.remove("hidden");
-}
-
-function deleteNote(index) {
-  if (!confirm("정말 삭제할까요?")) return;
-  notes.splice(index, 1);
-  localStorage.setItem("notes", JSON.stringify(notes));
-  renderList();
-}
-
-goHome();
-
-// PWA 서비스워커 등록
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
-}
+/* ===== 초기 실행 ===== */
+showHome();
 </script>
+
 </body>
 </html>
-
-
