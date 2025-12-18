@@ -1,50 +1,47 @@
-// 🔖 캐시 버전 (기능 수정할 때마다 숫자 올리기)
-const CACHE_NAME = "idea-note-v3";
+// 🔖 캐시 버전 (수정 시 숫자 증가)
+const CACHE_NAME = "idea-note-cache-v4";
 
-// 📦 캐시할 파일 목록
+// 📦 캐시 대상 (절대경로 필수)
 const urlsToCache = [
-  "./",
-  "./index.html",
-  "./manifest.json"
+  "/idea_note/",
+  "/idea_note/index.html",
+  "/idea_note/manifest.json",
+  "/idea_note/icon-512.png"
 ];
 
-// 1️⃣ 설치 단계: 새 캐시 생성
+// 설치
 self.addEventListener("install", event => {
-  console.log("[SW] Install");
-  self.skipWaiting(); // 👉 이전 SW 기다리지 않고 바로 교체 준비
-
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
 
-// 2️⃣ 활성화 단계: 이전 캐시 전부 삭제
+// 활성화: 이전 캐시 제거
 self.addEventListener("activate", event => {
-  console.log("[SW] Activate");
-
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            console.log("[SW] Delete old cache:", key);
-            return caches.delete(key);
-          }
-        })
+        keys
+          .filter(key => key !== CACHE_NAME)
+          .map(key => caches.delete(key))
       )
     )
   );
-
-  self.clients.claim(); // 👉 열린 페이지를 새 SW가 즉시 제어
+  self.clients.claim();
 });
 
-// 3️⃣ fetch: 캐시 우선, 없으면 네트워크
+// fetch: 네트워크 우선 → 캐시 폴백
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request)
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clone);
+        });
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
