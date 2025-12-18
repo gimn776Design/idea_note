@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>Idea Note</title>
-  <link rel="manifest" href="manifest.json" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/idea_note/manifest.json" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -214,6 +216,11 @@ document.getElementById("fileInput").addEventListener("change", e => {
 
 /* ===== 초기 실행 ===== */
 showHome();
+
+/* ===== Service Worker 등록 ===== */
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/idea_note/service-worker.js");
+}
 </script>
 
 </body>
