@@ -45,6 +45,15 @@
       margin-bottom: 10px;
     }
   </style>
+
+  <!-- 🔒 URL 정규화 (가장 중요) -->
+  <script>
+    // 어떤 경로로 들어와도 항상 동일한 URL로 통일
+    if (!location.search.includes("source=pwa")) {
+      const newUrl = location.pathname + "?source=pwa";
+      location.replace(newUrl);
+    }
+  </script>
 </head>
 
 <body>
